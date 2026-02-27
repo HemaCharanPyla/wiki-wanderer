@@ -93,6 +93,7 @@
                 0 0 60px hsl(var(--glow-accent) / 0.1);
   }
 
+  .wiki-content a[href^="./"],
   .wiki-content a[href^="/wiki/"] {
     color: hsl(var(--wiki-link));
     text-decoration: underline;
@@ -102,13 +103,14 @@
     cursor: pointer;
   }
 
+  .wiki-content a[href^="./"]:hover,
   .wiki-content a[href^="/wiki/"]:hover {
     color: hsl(var(--wiki-link-hover));
     text-decoration-color: hsl(var(--wiki-link-hover));
     text-shadow: 0 0 8px hsl(var(--glow-primary) / 0.4);
   }
 
-  .wiki-content a:not([href^="/wiki/"]) {
+  .wiki-content a:not([href^="./"]):not([href^="/wiki/"]) {
     pointer-events: none;
     color: hsl(var(--muted-foreground));
     text-decoration: none;

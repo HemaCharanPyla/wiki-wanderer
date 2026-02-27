@@ -17,11 +17,16 @@ export function WikiViewer({ page, onNavigate, isNavigating }: WikiViewerProps) 
     
     if (!anchor) return;
     e.preventDefault();
+    e.stopPropagation();
     
     const href = anchor.getAttribute('href');
     if (!href) return;
 
+    console.log('Clicked link href:', href);
+
     const title = extractTitleFromHref(href);
+    console.log('Extracted title:', title);
+    
     if (title && !title.includes(':') && !title.startsWith('#')) {
       onNavigate(title);
     }
