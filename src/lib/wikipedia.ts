@@ -67,8 +67,18 @@ export async function getRandomArticles(count: number = 2): Promise<string[]> {
 }
 
 export function extractTitleFromHref(href: string): string | null {
-  // Match internal wiki links like /wiki/Article_Name
-  const match = href.match(/^\.\/([^#]+)/);
+  // Match ./Article_Name (Wikipedia REST API format)
+  let match = href.match(/^\.\/([^#]+)/);
+  if (match) {
+    return decodeURIComponent(match[1]);
+  }
+  // Match /wiki/Article_Name
+  match = href.match(/^\/wiki\/([^#]+)/);
+  if (match) {
+    return decodeURIComponent(match[1]);
+  }
+  // Match full Wikipedia URLs
+  match = href.match(/en\.wikipedia\.org\/wiki\/([^#]+)/);
   if (match) {
     return decodeURIComponent(match[1]);
   }
