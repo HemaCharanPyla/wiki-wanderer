@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Zap, Play, Loader2, Trophy } from 'lucide-react';
+import { Zap, Play, Loader2, GraduationCap, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { type Difficulty, loadPlayerStats, getLevelFromPoints, getRank, getProgressToNextLevel } from '@/lib/scoring';
+import { type Difficulty, loadPlayerStats, getLevelFromPoints, getRank, getProgressToNextLevel, getPointsForLevel } from '@/lib/scoring';
 
 interface StartScreenProps {
   onStart: (difficulty: Difficulty) => void;
+  onTutorial: () => void;
   isLoading: boolean;
 }
 
@@ -14,12 +15,13 @@ const DIFFICULTIES: { value: Difficulty; label: string; desc: string; color: str
   { value: 'hard', label: 'Hard', desc: 'Unrelated topics', color: 'text-destructive' },
 ];
 
-export function StartScreen({ onStart, isLoading }: StartScreenProps) {
+export function StartScreen({ onStart, onTutorial, isLoading }: StartScreenProps) {
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const stats = loadPlayerStats();
   const level = getLevelFromPoints(stats.totalPoints);
   const rank = getRank(level);
   const progress = getProgressToNextLevel(stats.totalPoints);
+  const nextLevelPts = getPointsForLevel(level);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
@@ -38,30 +40,56 @@ export function StartScreen({ onStart, isLoading }: StartScreenProps) {
         <h1 className="font-mono text-5xl sm:text-6xl font-extrabold text-primary glow-text mb-4 tracking-tight">
           WikiMaze
         </h1>
-        
+
         <p className="text-muted-foreground text-lg max-w-md mx-auto mb-3">
           Navigate from one Wikipedia article to another using only internal links.
         </p>
 
-        {/* Player Stats */}
-        {stats.gamesPlayed > 0 && (
-          <div className="bg-card border border-border rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-center gap-3 mb-2">
+        {/* Dashboard Stats Overlay */}
+        <div className="bg-card border border-border rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
               <span className="text-2xl">{rank.icon}</span>
               <div className="text-left">
                 <div className="font-mono text-sm font-bold text-foreground">{rank.name}</div>
-                <div className="font-mono text-xs text-muted-foreground">Level {level} • {stats.totalPoints} pts • {stats.gamesPlayed} games</div>
+                <div className="font-mono text-xs text-muted-foreground">
+                  Level {level}/100 • {stats.gamesPlayed} games
+                </div>
               </div>
             </div>
-            <div className="w-full bg-muted rounded-full h-1.5 mt-2">
-              <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${progress * 100}%` }} />
+            <div className="flex items-center gap-1.5 bg-warning/10 border border-warning/20 rounded-md px-2.5 py-1">
+              <Coins className="w-3.5 h-3.5 text-warning" />
+              <span className="font-mono text-sm font-bold text-warning">{stats.coins}</span>
             </div>
-            <div className="text-xs font-mono text-muted-foreground/50 mt-1">Progress to Level {level + 1}</div>
           </div>
+
+          {/* XP Progress bar */}
+          <div className="w-full bg-muted rounded-full h-2">
+            <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${progress * 100}%` }} />
+          </div>
+          <div className="flex justify-between mt-1">
+            <span className="text-xs font-mono text-muted-foreground/50">{stats.totalPoints} XP</span>
+            <span className="text-xs font-mono text-muted-foreground/50">
+              {level < 100 ? `${nextLevelPts} XP to Lv.${level + 1}` : 'MAX LEVEL'}
+            </span>
+          </div>
+        </div>
+
+        {/* Tutorial button for new players */}
+        {!stats.tutorialComplete && (
+          <Button
+            onClick={onTutorial}
+            disabled={isLoading}
+            variant="outline"
+            className="w-full mb-4 font-mono border-accent/30 text-accent hover:bg-accent/10"
+          >
+            <GraduationCap className="w-4 h-4 mr-2" />
+            Start Tutorial (Level 1 Training)
+          </Button>
         )}
 
         {/* Difficulty selector */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-3">Difficulty</div>
           <div className="flex gap-2 justify-center">
             {DIFFICULTIES.map(d => (

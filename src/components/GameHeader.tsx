@@ -1,10 +1,11 @@
-import { Target, ArrowRight, Zap } from 'lucide-react';
+import { Target, ArrowRight, Zap, Coins } from 'lucide-react';
 
 interface GameHeaderProps {
   startTitle: string;
   targetTitle: string;
   moves: number;
   elapsedSeconds: number;
+  coins: number;
 }
 
 function formatTime(seconds: number): string {
@@ -13,7 +14,7 @@ function formatTime(seconds: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export function GameHeader({ startTitle, targetTitle, moves, elapsedSeconds }: GameHeaderProps) {
+export function GameHeader({ startTitle, targetTitle, moves, elapsedSeconds, coins }: GameHeaderProps) {
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="flex items-center justify-between px-4 py-3 max-w-[1600px] mx-auto">
@@ -48,6 +49,10 @@ export function GameHeader({ startTitle, targetTitle, moves, elapsedSeconds }: G
 
         {/* Stats */}
         <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-1 bg-warning/10 rounded px-2 py-1">
+            <Coins className="w-3.5 h-3.5 text-warning" />
+            <span className="font-mono text-sm font-bold text-warning">{coins}</span>
+          </div>
           <div className="text-center">
             <div className="text-xs text-muted-foreground font-mono uppercase tracking-wider">Moves</div>
             <div className="font-mono text-lg font-bold text-foreground">{moves}</div>

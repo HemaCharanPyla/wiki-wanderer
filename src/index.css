@@ -169,4 +169,18 @@
     );
     pointer-events: none;
   }
+
+  .hint-highlight {
+    background: hsl(var(--warning) / 0.2) !important;
+    color: hsl(var(--warning)) !important;
+    text-decoration-color: hsl(var(--warning)) !important;
+    border-radius: 2px;
+    padding: 0 2px;
+    animation: hint-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes hint-pulse {
+    0%, 100% { box-shadow: 0 0 4px hsl(var(--warning) / 0.3); }
+    50% { box-shadow: 0 0 12px hsl(var(--warning) / 0.6); }
+  }
 }
