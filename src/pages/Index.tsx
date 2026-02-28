@@ -38,25 +38,25 @@ const Index = () => {
       />
 
       {/* Action bar */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-card/30">
+      <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 border-b border-border bg-card/30 overflow-x-auto">
         <Button
           variant="ghost"
           size="sm"
           onClick={goBack}
           disabled={state.path.length <= 1 || state.isNavigating}
-          className="font-mono text-xs text-muted-foreground hover:text-foreground"
+          className="font-mono text-[10px] sm:text-xs text-muted-foreground hover:text-foreground shrink-0 px-2 sm:px-3"
         >
-          <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-          Back
+          <ArrowLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-0.5 sm:mr-1" />
+          <span className="hidden sm:inline">Back</span>
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => startNewGame()}
-          className="font-mono text-xs text-muted-foreground hover:text-foreground"
+          className="font-mono text-[10px] sm:text-xs text-muted-foreground hover:text-foreground shrink-0 px-2 sm:px-3"
         >
-          <RotateCcw className="w-3.5 h-3.5 mr-1" />
-          New Game
+          <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-0.5 sm:mr-1" />
+          <span className="hidden sm:inline">New Game</span>
         </Button>
 
         {/* Hint button */}
@@ -66,24 +66,24 @@ const Index = () => {
             size="sm"
             onClick={useHint}
             disabled={state.coins < HINT_COST || state.hintUsed}
-            className={`font-mono text-xs ${state.hintUsed ? 'text-primary' : 'text-warning hover:text-warning'}`}
+            className={`font-mono text-[10px] sm:text-xs shrink-0 px-2 sm:px-3 ${state.hintUsed ? 'text-primary' : 'text-warning hover:text-warning'}`}
             title={state.hintUsed ? 'Hint active — look for the target in links!' : `Use hint (${HINT_COST} coins)`}
           >
-            <Lightbulb className="w-3.5 h-3.5 mr-1" />
-            {state.hintUsed ? 'Hint Active' : `Hint (${HINT_COST})`}
-            {!state.hintUsed && <Coins className="w-3 h-3 ml-1 text-warning" />}
+            <Lightbulb className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-0.5 sm:mr-1" />
+            {state.hintUsed ? 'Hint' : `${HINT_COST}`}
+            {!state.hintUsed && <Coins className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1 text-warning" />}
           </Button>
         )}
 
         <div className="flex-1" />
-        <span className={`text-xs font-mono px-2 py-0.5 rounded border ${
+        <span className={`text-[10px] sm:text-xs font-mono px-1.5 sm:px-2 py-0.5 rounded border shrink-0 ${
           state.difficulty === 'easy' ? 'text-primary border-primary/30' :
           state.difficulty === 'medium' ? 'text-warning border-warning/30' :
           'text-destructive border-destructive/30'
         }`}>
-          {isTutorial ? 'TUTORIAL' : state.difficulty.toUpperCase()}
+          {isTutorial ? 'TUT' : state.difficulty.toUpperCase()}
         </span>
-        <span className="text-xs font-mono text-muted-foreground/50 hidden sm:block truncate max-w-[200px]">
+        <span className="text-[10px] sm:text-xs font-mono text-muted-foreground/50 hidden md:block truncate max-w-[200px]">
           {state.currentPage?.title}
         </span>
       </div>

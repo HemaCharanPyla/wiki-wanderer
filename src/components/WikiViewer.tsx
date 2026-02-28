@@ -64,12 +64,12 @@ export function WikiViewer({ page, onNavigate, isNavigating, hintActive, targetT
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       )}
-      <div ref={contentRef} className="h-full overflow-y-auto px-4 sm:px-8 py-6">
-        <h1 className="font-mono text-2xl sm:text-3xl font-bold text-foreground mb-6 pb-3 border-b border-border">
+      <div ref={contentRef} className="h-full overflow-y-auto px-3 sm:px-6 md:px-8 py-4 sm:py-6">
+        <h1 className="font-mono text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6 pb-2 sm:pb-3 border-b border-border">
           {page.title}
         </h1>
         <div
-          className="wiki-content max-w-3xl text-sm sm:text-base leading-relaxed"
+          className="wiki-content max-w-3xl text-xs sm:text-sm md:text-base leading-relaxed"
           onClick={handleClick}
           dangerouslySetInnerHTML={{ __html: page.html }}
         />
