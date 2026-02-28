@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { getRandomArticles, fetchPageHtml, normalizeTitle, formatTitle, type WikiPage } from '@/lib/wikipedia';
-import { type Difficulty, calculateScore, loadPlayerStats, savePlayerStats, getLevelFromPoints, getRank, type ScoreResult } from '@/lib/scoring';
+import { type Difficulty, calculateScore, loadPlayerStats, savePlayerStats, getLevelFromPoints, getRank, HINT_COST, type ScoreResult } from '@/lib/scoring';
 
-export type GameStatus = 'idle' | 'loading' | 'playing' | 'won';
+export type GameStatus = 'idle' | 'loading' | 'playing' | 'won' | 'tutorial';
 
 export interface GameState {
   status: GameStatus;
@@ -19,6 +19,9 @@ export interface GameState {
   level: number;
   rank: { name: string; icon: string };
   gamesPlayed: number;
+  coins: number;
+  hintUsed: boolean;
+  tutorialComplete: boolean;
 }
 
 const stats = loadPlayerStats();
@@ -38,6 +41,9 @@ const initialState: GameState = {
   level: getLevelFromPoints(stats.totalPoints),
   rank: getRank(getLevelFromPoints(stats.totalPoints)),
   gamesPlayed: stats.gamesPlayed,
+  coins: stats.coins,
+  hintUsed: false,
+  tutorialComplete: stats.tutorialComplete,
 };
 
 export function useGameEngine() {
@@ -82,6 +88,7 @@ export function useGameEngine() {
         elapsedSeconds: 0,
         isNavigating: false,
         lastScore: null,
+        hintUsed: false,
       }));
       startTimer();
     } catch (err) {
@@ -89,6 +96,45 @@ export function useGameEngine() {
       setState(prev => ({ ...prev, status: 'idle' }));
     }
   }, [startTimer, stopTimer, state.difficulty]);
+
+  const startTutorial = useCallback(async () => {
+    stopTimer();
+    setState(prev => ({ ...prev, status: 'loading' }));
+
+    try {
+      // Tutorial uses a known easy pair
+      const page = await fetchPageHtml('Dog');
+      setState(prev => ({
+        ...prev,
+        status: 'tutorial',
+        startTitle: 'Dog',
+        targetTitle: 'Animal',
+        currentPage: page,
+        path: ['Dog'],
+        moves: 0,
+        elapsedSeconds: 0,
+        isNavigating: false,
+        lastScore: null,
+        difficulty: 'easy',
+        hintUsed: false,
+      }));
+      startTimer();
+    } catch (err) {
+      console.error('Failed to start tutorial:', err);
+      setState(prev => ({ ...prev, status: 'idle' }));
+    }
+  }, [startTimer, stopTimer]);
+
+  const useHint = useCallback(() => {
+    setState(prev => {
+      if (prev.coins < HINT_COST || prev.hintUsed) return prev;
+      const newCoins = prev.coins - HINT_COST;
+      const newStats = loadPlayerStats();
+      newStats.coins = newCoins;
+      savePlayerStats(newStats);
+      return { ...prev, coins: newCoins, hintUsed: true };
+    });
+  }, []);
 
   const navigateToPage = useCallback(async (title: string) => {
     const displayTitle = formatTitle(title);
@@ -107,13 +153,22 @@ export function useGameEngine() {
         
         if (isWin) {
           stopTimer();
+          const isTutorial = prev.status === 'tutorial';
           const score = calculateScore(prev.moves + 1, prev.elapsedSeconds, prev.difficulty);
           const newTotal = prev.totalPoints + score.points;
+          const newCoins = prev.coins + score.coinsEarned;
           const newLevel = getLevelFromPoints(newTotal);
           const newRank = getRank(newLevel);
           const newGames = prev.gamesPlayed + 1;
           
-          savePlayerStats({ totalPoints: newTotal, gamesPlayed: newGames, level: newLevel, rank: newRank.name });
+          savePlayerStats({
+            totalPoints: newTotal,
+            gamesPlayed: newGames,
+            level: newLevel,
+            rank: newRank.name,
+            coins: newCoins,
+            tutorialComplete: isTutorial ? true : prev.tutorialComplete,
+          });
           
           return {
             ...prev,
@@ -127,6 +182,8 @@ export function useGameEngine() {
             level: newLevel,
             rank: newRank,
             gamesPlayed: newGames,
+            coins: newCoins,
+            tutorialComplete: isTutorial ? true : prev.tutorialComplete,
           };
         }
 
@@ -135,7 +192,7 @@ export function useGameEngine() {
           currentPage: page,
           path: newPath,
           moves: prev.moves + 1,
-          status: 'playing',
+          status: prev.status,
           isNavigating: false,
         };
       });
@@ -172,7 +229,9 @@ export function useGameEngine() {
   return {
     state,
     startNewGame,
+    startTutorial,
     navigateToPage,
     goBack,
+    useHint,
   };
 }
