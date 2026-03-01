@@ -6,6 +6,7 @@ interface GameHeaderProps {
   moves: number;
   elapsedSeconds: number;
   coins: number;
+  isDailyChallenge?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -14,7 +15,7 @@ function formatTime(seconds: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export function GameHeader({ startTitle, targetTitle, moves, elapsedSeconds, coins }: GameHeaderProps) {
+export function GameHeader({ startTitle, targetTitle, moves, elapsedSeconds, coins, isDailyChallenge }: GameHeaderProps) {
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 max-w-[1600px] mx-auto gap-2">
