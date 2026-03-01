@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGameEngine } from '@/hooks/useGameEngine';
+import { useAuth } from '@/hooks/useAuth';
 import { StartScreen } from '@/components/StartScreen';
 import { GameHeader } from '@/components/GameHeader';
 import { WikiViewer } from '@/components/WikiViewer';
@@ -8,19 +9,27 @@ import { MobilePathDrawer } from '@/components/MobilePathDrawer';
 import { WinScreen } from '@/components/WinScreen';
 import { TutorialOverlay } from '@/components/TutorialOverlay';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, ArrowLeft, Lightbulb, Coins } from 'lucide-react';
+import { RotateCcw, ArrowLeft, Lightbulb, Coins, LogOut, X, Info } from 'lucide-react';
 import { type Difficulty, HINT_COST } from '@/lib/scoring';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
-  const { state, startNewGame, startTutorial, navigateToPage, goBack, useHint } = useGameEngine();
+  const { state, startNewGame, startTutorial, startDailyChallenge, navigateToPage, goBack, useHint, quitGame } = useGameEngine();
+  const { user, signOut } = useAuth();
   const [showTutorial, setShowTutorial] = useState(true);
+  const [showHintInfo, setShowHintInfo] = useState(false);
+  const navigate = useNavigate();
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (
       <StartScreen
         onStart={(d: Difficulty) => startNewGame(d)}
         onTutorial={startTutorial}
+        onDailyChallenge={startDailyChallenge}
         isLoading={state.status === 'loading'}
+        user={user}
+        onSignOut={signOut}
+        onSignIn={() => navigate('/auth')}
       />
     );
   }
@@ -35,10 +44,21 @@ const Index = () => {
         moves={state.moves}
         elapsedSeconds={state.elapsedSeconds}
         coins={state.coins}
+        isDailyChallenge={state.isDailyChallenge}
       />
 
       {/* Action bar */}
       <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 border-b border-border bg-card/30 overflow-x-auto">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={quitGame}
+          className="font-mono text-[10px] sm:text-xs text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 px-2 sm:px-3"
+          title="Quit this game"
+        >
+          <X className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-0.5 sm:mr-1" />
+          <span className="hidden sm:inline">Quit</span>
+        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -64,10 +84,17 @@ const Index = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={useHint}
-            disabled={state.coins < HINT_COST || state.hintUsed}
+            onClick={() => {
+              if (!state.hintUsed) {
+                useHint();
+                setShowHintInfo(true);
+              } else {
+                setShowHintInfo(!showHintInfo);
+              }
+            }}
+            disabled={state.coins < HINT_COST && !state.hintUsed}
             className={`font-mono text-[10px] sm:text-xs shrink-0 px-2 sm:px-3 ${state.hintUsed ? 'text-primary' : 'text-warning hover:text-warning'}`}
-            title={state.hintUsed ? 'Hint active — look for the target in links!' : `Use hint (${HINT_COST} coins)`}
+            title={state.hintUsed ? 'View hint details' : `Use hint (${HINT_COST} coins)`}
           >
             <Lightbulb className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-0.5 sm:mr-1" />
             {state.hintUsed ? 'Hint' : `${HINT_COST}`}
@@ -77,16 +104,33 @@ const Index = () => {
 
         <div className="flex-1" />
         <span className={`text-[10px] sm:text-xs font-mono px-1.5 sm:px-2 py-0.5 rounded border shrink-0 ${
+          state.isDailyChallenge ? 'text-accent border-accent/30' :
           state.difficulty === 'easy' ? 'text-primary border-primary/30' :
           state.difficulty === 'medium' ? 'text-warning border-warning/30' :
           'text-destructive border-destructive/30'
         }`}>
-          {isTutorial ? 'TUT' : state.difficulty.toUpperCase()}
+          {isTutorial ? 'TUT' : state.isDailyChallenge ? '📅 DAILY' : state.difficulty.toUpperCase()}
         </span>
         <span className="text-[10px] sm:text-xs font-mono text-muted-foreground/50 hidden md:block truncate max-w-[200px]">
           {state.currentPage?.title}
         </span>
       </div>
+
+      {/* Hint info panel */}
+      {showHintInfo && state.hintUsed && state.targetExtract && (
+        <div className="px-2 sm:px-4 py-2 border-b border-warning/20 bg-warning/5 animate-fade-in">
+          <div className="flex items-start gap-2 max-w-3xl mx-auto">
+            <Info className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] sm:text-xs font-mono text-warning font-bold mb-1">Target Article Summary</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed">{state.targetExtract}</p>
+            </div>
+            <button onClick={() => setShowHintInfo(false)} className="text-muted-foreground hover:text-foreground">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
@@ -128,6 +172,7 @@ const Index = () => {
           difficulty={state.difficulty}
           coins={state.coins}
           wasTutorial={!state.tutorialComplete}
+          isDailyChallenge={state.isDailyChallenge}
         />
       )}
     </div>
