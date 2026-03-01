@@ -1,17 +1,12 @@
 import { useState } from 'react';
-import { Zap, Play, Loader2, GraduationCap, Coins, Calendar, LogIn, LogOut, User } from 'lucide-react';
+import { Zap, Play, Loader2, GraduationCap, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type Difficulty, loadPlayerStats, getLevelFromPoints, getRank, getProgressToNextLevel, getPointsForLevel } from '@/lib/scoring';
-import type { User as AuthUser } from '@supabase/supabase-js';
 
 interface StartScreenProps {
   onStart: (difficulty: Difficulty) => void;
   onTutorial: () => void;
-  onDailyChallenge: () => void;
   isLoading: boolean;
-  user: AuthUser | null;
-  onSignOut: () => void;
-  onSignIn: () => void;
 }
 
 const DIFFICULTIES: { value: Difficulty; label: string; desc: string; color: string }[] = [
@@ -20,7 +15,7 @@ const DIFFICULTIES: { value: Difficulty; label: string; desc: string; color: str
   { value: 'hard', label: 'Hard', desc: 'Unrelated topics', color: 'text-destructive' },
 ];
 
-export function StartScreen({ onStart, onTutorial, onDailyChallenge, isLoading, user, onSignOut, onSignIn }: StartScreenProps) {
+export function StartScreen({ onStart, onTutorial, isLoading }: StartScreenProps) {
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const stats = loadPlayerStats();
   const level = getLevelFromPoints(stats.totalPoints);
@@ -35,28 +30,6 @@ export function StartScreen({ onStart, onTutorial, onDailyChallenge, isLoading, 
         backgroundImage: 'linear-gradient(hsl(150 80% 50%) 1px, transparent 1px), linear-gradient(90deg, hsl(150 80% 50%) 1px, transparent 1px)',
         backgroundSize: '60px 60px',
       }} />
-
-      {/* Auth button */}
-      <div className="absolute top-4 right-4 z-20">
-        {user ? (
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-card border border-border rounded-md px-2 py-1">
-              <User className="w-3 h-3 text-primary" />
-              <span className="text-[10px] sm:text-xs font-mono text-foreground truncate max-w-[100px]">
-                {user.user_metadata?.full_name || user.email?.split('@')[0]}
-              </span>
-            </div>
-            <Button variant="ghost" size="sm" onClick={onSignOut} className="text-xs font-mono px-2">
-              <LogOut className="w-3 h-3" />
-            </Button>
-          </div>
-        ) : (
-          <Button variant="outline" size="sm" onClick={onSignIn} className="text-xs font-mono gap-1.5">
-            <LogIn className="w-3 h-3" />
-            Sign In
-          </Button>
-        )}
-      </div>
 
       <div className="relative z-10 text-center animate-scale-in max-w-md w-full">
         {/* Logo */}
@@ -114,17 +87,6 @@ export function StartScreen({ onStart, onTutorial, onDailyChallenge, isLoading, 
             Start Tutorial (Level 1 Training)
           </Button>
         )}
-
-        {/* Daily Challenge */}
-        <Button
-          onClick={onDailyChallenge}
-          disabled={isLoading}
-          variant="outline"
-          className="w-full mb-3 sm:mb-4 font-mono text-sm border-primary/30 text-primary hover:bg-primary/10"
-        >
-          <Calendar className="w-4 h-4 mr-2" />
-          Daily Challenge
-        </Button>
 
         {/* Difficulty selector */}
         <div className="mb-4 sm:mb-6">

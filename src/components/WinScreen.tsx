@@ -15,7 +15,6 @@ interface WinScreenProps {
   difficulty: Difficulty;
   coins: number;
   wasTutorial?: boolean;
-  isDailyChallenge?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -24,7 +23,7 @@ function formatTime(seconds: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export function WinScreen({ moves, elapsedSeconds, path, onRestart, score, totalPoints, level, rank, difficulty, coins, wasTutorial, isDailyChallenge }: WinScreenProps) {
+export function WinScreen({ moves, elapsedSeconds, path, onRestart, score, totalPoints, level, rank, difficulty, coins, wasTutorial }: WinScreenProps) {
   const progress = getProgressToNextLevel(totalPoints);
 
   return (

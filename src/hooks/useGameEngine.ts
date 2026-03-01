@@ -1,8 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { getRandomArticles, fetchPageHtml, fetchPageExtract, normalizeTitle, formatTitle, type WikiPage } from '@/lib/wikipedia';
+import { getRandomArticles, fetchPageHtml, normalizeTitle, formatTitle, type WikiPage } from '@/lib/wikipedia';
 import { type Difficulty, calculateScore, loadPlayerStats, savePlayerStats, getLevelFromPoints, getRank, HINT_COST, type ScoreResult } from '@/lib/scoring';
-import { getDailyChallenge } from '@/lib/dailyChallenge';
-import { supabase } from '@/integrations/supabase/client';
 
 export type GameStatus = 'idle' | 'loading' | 'playing' | 'won' | 'tutorial';
 
@@ -24,8 +22,6 @@ export interface GameState {
   coins: number;
   hintUsed: boolean;
   tutorialComplete: boolean;
-  targetExtract: string;
-  isDailyChallenge: boolean;
 }
 
 const stats = loadPlayerStats();
@@ -48,8 +44,6 @@ const initialState: GameState = {
   coins: stats.coins,
   hintUsed: false,
   tutorialComplete: stats.tutorialComplete,
-  targetExtract: '',
-  isDailyChallenge: false,
 };
 
 export function useGameEngine() {
@@ -74,23 +68,6 @@ export function useGameEngine() {
     return () => stopTimer();
   }, [stopTimer]);
 
-  const quitGame = useCallback(() => {
-    stopTimer();
-    setState(prev => ({
-      ...prev,
-      status: 'idle',
-      currentPage: null,
-      path: [],
-      moves: 0,
-      elapsedSeconds: 0,
-      isNavigating: false,
-      lastScore: null,
-      hintUsed: false,
-      targetExtract: '',
-      isDailyChallenge: false,
-    }));
-  }, [stopTimer]);
-
   const startNewGame = useCallback(async (difficulty?: Difficulty) => {
     stopTimer();
     const diff = difficulty || state.difficulty;
@@ -98,10 +75,7 @@ export function useGameEngine() {
 
     try {
       const [startTitle, targetTitle] = await getRandomArticles(2, diff);
-      const [page, extract] = await Promise.all([
-        fetchPageHtml(startTitle),
-        fetchPageExtract(targetTitle),
-      ]);
+      const page = await fetchPageHtml(startTitle);
       
       setState(prev => ({
         ...prev,
@@ -115,8 +89,6 @@ export function useGameEngine() {
         isNavigating: false,
         lastScore: null,
         hintUsed: false,
-        targetExtract: extract,
-        isDailyChallenge: false,
       }));
       startTimer();
     } catch (err) {
@@ -125,49 +97,13 @@ export function useGameEngine() {
     }
   }, [startTimer, stopTimer, state.difficulty]);
 
-  const startDailyChallenge = useCallback(async () => {
-    stopTimer();
-    setState(prev => ({ ...prev, status: 'loading' }));
-
-    try {
-      const challenge = await getDailyChallenge();
-      const [page, extract] = await Promise.all([
-        fetchPageHtml(challenge.start),
-        fetchPageExtract(challenge.target),
-      ]);
-
-      setState(prev => ({
-        ...prev,
-        status: 'playing',
-        startTitle: formatTitle(challenge.start),
-        targetTitle: formatTitle(challenge.target),
-        currentPage: page,
-        path: [formatTitle(challenge.start)],
-        moves: 0,
-        elapsedSeconds: 0,
-        isNavigating: false,
-        lastScore: null,
-        difficulty: 'medium',
-        hintUsed: false,
-        targetExtract: extract,
-        isDailyChallenge: true,
-      }));
-      startTimer();
-    } catch (err) {
-      console.error('Failed to start daily challenge:', err);
-      setState(prev => ({ ...prev, status: 'idle' }));
-    }
-  }, [startTimer, stopTimer]);
-
   const startTutorial = useCallback(async () => {
     stopTimer();
     setState(prev => ({ ...prev, status: 'loading' }));
 
     try {
-      const [page, extract] = await Promise.all([
-        fetchPageHtml('Dog'),
-        fetchPageExtract('Animal'),
-      ]);
+      // Tutorial uses a known easy pair
+      const page = await fetchPageHtml('Dog');
       setState(prev => ({
         ...prev,
         status: 'tutorial',
@@ -181,8 +117,6 @@ export function useGameEngine() {
         lastScore: null,
         difficulty: 'easy',
         hintUsed: false,
-        targetExtract: extract,
-        isDailyChallenge: false,
       }));
       startTimer();
     } catch (err) {
@@ -200,34 +134,6 @@ export function useGameEngine() {
       savePlayerStats(newStats);
       return { ...prev, coins: newCoins, hintUsed: true };
     });
-  }, []);
-
-  const saveGameToHistory = useCallback(async (gameState: GameState, score: ScoreResult) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-
-    await supabase.from('game_history').insert({
-      user_id: session.user.id,
-      start_title: gameState.startTitle,
-      target_title: gameState.targetTitle,
-      path: gameState.path,
-      moves: gameState.moves + 1,
-      elapsed_seconds: gameState.elapsedSeconds,
-      difficulty: gameState.difficulty,
-      points_earned: score.points,
-      coins_earned: score.coinsEarned,
-      hint_used: gameState.hintUsed,
-      is_daily_challenge: gameState.isDailyChallenge,
-    });
-
-    // Sync profile
-    await supabase.from('profiles').update({
-      total_points: gameState.totalPoints + score.points,
-      coins: gameState.coins + score.coinsEarned,
-      games_played: gameState.gamesPlayed + 1,
-      level: getLevelFromPoints(gameState.totalPoints + score.points),
-      rank: getRank(getLevelFromPoints(gameState.totalPoints + score.points)).name,
-    }).eq('user_id', session.user.id);
   }, []);
 
   const navigateToPage = useCallback(async (title: string) => {
@@ -263,9 +169,6 @@ export function useGameEngine() {
             coins: newCoins,
             tutorialComplete: isTutorial ? true : prev.tutorialComplete,
           });
-
-          // Save to DB async
-          saveGameToHistory(prev, score);
           
           return {
             ...prev,
@@ -297,7 +200,7 @@ export function useGameEngine() {
       console.error('Failed to navigate:', err);
       setState(prev => ({ ...prev, isNavigating: false }));
     }
-  }, [stopTimer, saveGameToHistory]);
+  }, [stopTimer]);
 
   const goBack = useCallback(async () => {
     setState(prev => {
@@ -327,10 +230,8 @@ export function useGameEngine() {
     state,
     startNewGame,
     startTutorial,
-    startDailyChallenge,
     navigateToPage,
     goBack,
     useHint,
-    quitGame,
   };
 }

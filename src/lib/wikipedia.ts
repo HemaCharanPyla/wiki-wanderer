@@ -13,7 +13,7 @@ export interface WikiPage {
 import type { Difficulty } from '@/lib/scoring';
 
 // Categorized articles for difficulty-based pairing
-export const ARTICLE_CATEGORIES: Record<string, string[]> = {
+const ARTICLE_CATEGORIES: Record<string, string[]> = {
   science: ['Albert_Einstein', 'DNA', 'Solar_System', 'Gravity', 'Electricity', 'Vaccine', 'Artificial_intelligence', 'Climate_change', 'Coral_reef', 'Volcano'],
   history: ['World_War_II', 'Napoleon', 'Ancient_Egypt', 'Renaissance', 'Rome', 'Democracy', 'Olympic_Games', 'Leonardo_da_Vinci', 'Shakespeare', 'Nikola_Tesla'],
   geography: ['United_States', 'Japan', 'Africa', 'Antarctica', 'Sahara', 'Mount_Everest', 'Amazon_rainforest', 'Ocean', 'Mars', 'Moon'],
@@ -30,10 +30,12 @@ function pickRandom<T>(arr: T[]): T {
 
 export async function getRandomArticles(count: number = 2, difficulty: Difficulty = 'medium'): Promise<string[]> {
   if (difficulty === 'easy') {
+    // Same category → closely related
     const cat = pickRandom(ALL_CATEGORIES);
     const pool = [...ARTICLE_CATEGORIES[cat]].sort(() => Math.random() - 0.5);
     return [pool[0], pool[1]];
   } else if (difficulty === 'medium') {
+    // Adjacent categories
     const idx = Math.floor(Math.random() * ALL_CATEGORIES.length);
     const cat1 = ALL_CATEGORIES[idx];
     const cat2 = ALL_CATEGORIES[(idx + 1) % ALL_CATEGORIES.length];
@@ -42,6 +44,7 @@ export async function getRandomArticles(count: number = 2, difficulty: Difficult
     while (b === a) b = pickRandom(ARTICLE_CATEGORIES[cat2]);
     return [a, b];
   } else {
+    // Hard: completely unrelated categories
     const cats = [...ALL_CATEGORIES].sort(() => Math.random() - 0.5);
     const a = pickRandom(ARTICLE_CATEGORIES[cats[0]]);
     const b = pickRandom(ARTICLE_CATEGORIES[cats[cats.length - 1]]);
@@ -75,24 +78,22 @@ export async function fetchPageHtml(title: string): Promise<WikiPage> {
   };
 }
 
-export async function fetchPageExtract(title: string): Promise<string> {
-  const encodedTitle = encodeURIComponent(title);
-  const url = `${WIKI_ACTION_API}?action=query&titles=${encodedTitle}&prop=extracts&exintro=1&explaintext=1&format=json&origin=*`;
-  const response = await fetch(url);
-  const data = await response.json();
-  const pages = data.query?.pages;
-  if (!pages) return '';
-  const page = Object.values(pages)[0] as any;
-  return page?.extract?.slice(0, 200) || '';
-}
-
 export function extractTitleFromHref(href: string): string | null {
+  // Match ./Article_Name (Wikipedia REST API format)
   let match = href.match(/^\.\/([^#]+)/);
-  if (match) return decodeURIComponent(match[1]);
+  if (match) {
+    return decodeURIComponent(match[1]);
+  }
+  // Match /wiki/Article_Name
   match = href.match(/^\/wiki\/([^#]+)/);
-  if (match) return decodeURIComponent(match[1]);
+  if (match) {
+    return decodeURIComponent(match[1]);
+  }
+  // Match full Wikipedia URLs
   match = href.match(/en\.wikipedia\.org\/wiki\/([^#]+)/);
-  if (match) return decodeURIComponent(match[1]);
+  if (match) {
+    return decodeURIComponent(match[1]);
+  }
   return null;
 }
 
